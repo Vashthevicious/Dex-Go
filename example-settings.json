@@ -1,0 +1,8 @@
+{
+  "BotToken": "telegram bot token",
+  "ChannelID": -123456789,
+  "ControlChannelID": 987654321,
+  "SQLConnectString": "db-user:db-password@tcp(host:port)/database-name?parseTime=true&autocommit=true&collation=utf8mb4_general_ci",
+  "RandomChance": 100,
+  "DatabaseTimeout": "300s"
+}
