@@ -7,9 +7,8 @@ import (
 )
 
 var commands []*BotCommand
+var regexCommands []*RegexCommand
 var callbacks []*BotCommand
-var newmembercommands []*MemberCommand
-var leftmembercommands []*MemberCommand
 
 type BotCommand struct {
 	MatchCmd   *regexp.Regexp
@@ -17,15 +16,17 @@ type BotCommand struct {
 	HandleFunc func(tgbotapi.Update, *tgbotapi.BotAPI)
 }
 
-type MemberCommand struct {
+type RegexCommand struct {
+	MatchCmd   *regexp.Regexp
 	Chan       int64
-	HandleFunc func(tgbotapi.Update, *tgbotapi.BotAPI)
+	HandleFunc func(tgbotapi.Update, *tgbotapi.BotAPI, map[string]string)
 }
 
 func TestCmd(updateIn tgbotapi.Update, botIn *tgbotapi.BotAPI) {
 	c := tgbotapi.NewMessage(updateIn.Message.Chat.ID, "Butts")
 	botIn.Send(c)
 }
+
 func Register(regexIn string, chanIn int64, handleFunc func(tgbotapi.Update, *tgbotapi.BotAPI)) {
 	if commands == nil {
 		commands = []*BotCommand{}
@@ -35,6 +36,16 @@ func Register(regexIn string, chanIn int64, handleFunc func(tgbotapi.Update, *tg
 	newCommand.Chan = chanIn
 	newCommand.HandleFunc = handleFunc
 	commands = append(commands, newCommand)
+}
+func RegisterRegex(regexIn string, chanIn int64, handleFunc func(tgbotapi.Update, *tgbotapi.BotAPI, map[string]string)) {
+	if regexCommands == nil {
+		regexCommands = []*RegexCommand{}
+	}
+	newCommand := &RegexCommand{}
+	newCommand.MatchCmd = regexp.MustCompile(regexIn)
+	newCommand.Chan = chanIn
+	newCommand.HandleFunc = handleFunc
+	regexCommands = append(regexCommands, newCommand)
 }
 func RegisterCallback(regexIn string, handleFunc func(tgbotapi.Update, *tgbotapi.BotAPI)) {
 	if callbacks == nil {
@@ -57,6 +68,23 @@ func ProcessMessage(upd tgbotapi.Update, bot *tgbotapi.BotAPI) {
 			}
 		}
 	}
+	for _, cmd := range regexCommands {
+		if cmd.MatchCmd.Match([]byte(message)) {
+			if cmd.Chan == upd.Message.Chat.ID || cmd.Chan == 0 {
+				go cmd.HandleFunc(upd, bot, resolveRegexCaptureGroups(cmd.MatchCmd, message))
+			}
+		}
+	}
+}
+func resolveRegexCaptureGroups(regex *regexp.Regexp, text string) map[string]string {
+	match := regex.FindStringSubmatch(text)
+	result := make(map[string]string)
+	for i, name := range regex.SubexpNames() {
+		if i != 0 {
+			result[name] = match[i]
+		}
+	}
+	return result
 }
 func ProcessCallback(upd tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	data := upd.CallbackQuery.Data

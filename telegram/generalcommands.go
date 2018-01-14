@@ -1,16 +1,18 @@
 package telegram
 
 import (
+	"bytes"
 	"github.com/fortinj1354/Dex-Go/metrics"
 	"github.com/fortinj1354/Dex-Go/models"
 	"github.com/fortinj1354/Dex-Go/settings"
 	"gopkg.in/telegram-bot-api.v4"
 	"math/rand"
+	"strconv"
 )
 
 //Help response for main channel
 func MainChannelHelp(upd tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	newMsg := tgbotapi.NewMessage(settings.GetChannelID(), "/mods - Call the chat moderators\n/ask <word> - Ask the bot about a word\n<anything> c/d - Ask the bot the hard questions in life")
+	newMsg := tgbotapi.NewMessage(settings.GetChannelID(), "/mods - Call the chat moderators\n/ask <word> - Ask the bot about a word\n<anything> c/d - Ask the bot the hard questions in life\n/roll <dice>d<sides> - Get a dice roll")
 	bot.Send(newMsg)
 }
 
@@ -50,5 +52,48 @@ func YesOrNo(upd tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		} else {
 			bot.Send(tgbotapi.NewMessage(settings.GetChannelID(), "d"))
 		}
+	}
+}
+
+func DiceRoll(upd tgbotapi.Update, bot *tgbotapi.BotAPI, regexMatch map[string]string) {
+	if upd.Message.Chat.ID == settings.GetChannelID() {
+		dice, err := strconv.Atoi(regexMatch["dice"])
+		if err != nil {
+			panic(err)
+		}
+		sides, err := strconv.Atoi(regexMatch["sides"])
+		if err != nil {
+			panic(err)
+		}
+
+		var outMessage tgbotapi.MessageConfig
+		if dice > 0 && sides > 0 {
+			if dice > 10000 {
+				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Too many dice")
+			} else if dice > 50 || sides > 100000 {
+				diceSum := 0
+				for i := 0; i < dice; i++ {
+					diceSum += rand.Intn(sides) + 1
+				}
+				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Total: "+strconv.Itoa(diceSum))
+			} else if dice == 1 {
+				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Roll: "+strconv.Itoa(rand.Intn(sides)+1))
+			} else {
+				var rolls bytes.Buffer
+				diceSum := 0
+				for i := 0; i < dice; i++ {
+					roll := rand.Intn(sides) + 1
+					diceSum += roll
+					if i != 0 {
+						rolls.WriteString(", ")
+					}
+					rolls.WriteString(strconv.Itoa(roll))
+				}
+				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Total: "+strconv.Itoa(diceSum)+" Rolls: "+rolls.String())
+			}
+		}
+
+		bot.Send(outMessage)
+
 	}
 }

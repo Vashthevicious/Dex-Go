@@ -23,6 +23,7 @@ func main() {
 	telegram.Register(`^\/help`, settings.GetChannelID(), telegram.MainChannelHelp)
 	telegram.Register(`^\/ask .+`, settings.GetChannelID(), telegram.MarkovTalkAbout)
 	telegram.Register(`.* c/d$`, settings.GetChannelID(), telegram.YesOrNo)
+	telegram.RegisterRegex(`\/roll (?P<dice>\d+)d(?P<sides>\d+).*`, settings.GetChannelID(), telegram.DiceRoll)
 	telegram.Register(`.*`, settings.GetChannelID(), telegram.HandleUsers)
 	telegram.Register(`.*`, settings.GetChannelID(), telegram.HandleMarkov)
 
