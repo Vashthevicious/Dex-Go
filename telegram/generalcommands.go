@@ -66,8 +66,8 @@ func DiceRoll(upd tgbotapi.Update, bot *tgbotapi.BotAPI, regexMatch map[string]s
 			panic(err)
 		}
 
-		var outMessage tgbotapi.MessageConfig
 		if dice > 0 && sides > 0 {
+			var outMessage tgbotapi.MessageConfig
 			if dice > 10000 {
 				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Too many dice")
 			} else if dice > 50 || sides > 100000 {
@@ -91,9 +91,7 @@ func DiceRoll(upd tgbotapi.Update, bot *tgbotapi.BotAPI, regexMatch map[string]s
 				}
 				outMessage = tgbotapi.NewMessage(settings.GetChannelID(), "Total: "+strconv.Itoa(diceSum)+" Rolls: "+rolls.String())
 			}
+			bot.Send(outMessage)
 		}
-
-		bot.Send(outMessage)
-
 	}
 }
